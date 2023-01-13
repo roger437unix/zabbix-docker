@@ -34,3 +34,69 @@ $ sudo reboot
 
 $ docker --version  && docker-compose --version
 
+
+### Usando esse repositório
+
+$ git clone https://github.com/roger437linux/zabbix-docker.git
+
+$ cd zabbix-docker/
+
+$ docker-compose pull
+
+$ docker-compose up -d
+
+$ docker-compose down
+
+
+### Provisionar containers com *profile*.
+  - zabbix-proxy
+  - java-gateway
+  - snmptraps
+  - grafana
+
+$ docker-compose --profile zabbix-proxy --profile grafana up -d
+
+
+### Configurar Zabbix-agent
+
+Encontrar o IPv4 do host zabbix-agent. 
+Pode ser feito pelo script no mesmo diretório **ip-containers.sh** ou por comando do Docker
+
+$ ./ip-containers.sh
+
+$ docker inspect zabbix-agent | grep -w IPAddress
+
+O IPv4 encontrado deverá ser cofigurado na interface Zabbix web.
+
+**Menu
+  ==> Configuration 
+    ==> Hosts 
+      ==> Link Zabbix-Server ==>
+        Campo Agent**
+
+
+### Configurar Zabbix-proxy
+
+Encontrar a frase que foi configurada para referencia ao Zabbix-proxy
+
+$ docker exec -i zabbix-proxy grep Hostname=z /etc/zabbix/zabbix_proxy.conf | cut -d= -f2
+
+
+A frase encontrada deverá ser cofigurada na interface Zabbix web.
+
+**Menu
+  ==> Administration 
+    ==> Proxies 
+      ==> Create proxy 
+        ==> Proxy name
+          ==> Add**
+
+
+Após alguns segundos, o valor da coluna "Last seen (age)" deverá mudar para um número entre 0 ... 6
+
+
+
+
+![](![image](https://user-images.githubusercontent.com/33252885/212394257-6db7c575-308f-4294-996a-6d27809da7f9.png)
+
+
