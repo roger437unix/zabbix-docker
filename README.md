@@ -97,6 +97,5 @@ Após alguns segundos, o valor da coluna "Last seen (age)" deverá mudar para um
 
 
 
-![](![image](https://user-images.githubusercontent.com/33252885/212394257-6db7c575-308f-4294-996a-6d27809da7f9.png)
-
+![image](https://user-images.githubusercontent.com/33252885/212394257-6db7c575-308f-4294-996a-6d27809da7f9.png)
 
