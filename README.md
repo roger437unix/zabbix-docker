@@ -2,7 +2,7 @@
 
 # Zabbix e Grafana em containers Docker
 
-O suporte para *service profiles*, que está sendo usado no *docker-compose* foi adicionado na versão 1.28 do docker-compose.
+O suporte para *service profiles*, que está sendo usado, foi adicionado na versão 1.28 do docker-compose.
 
 ## Install Docker Compose
 
