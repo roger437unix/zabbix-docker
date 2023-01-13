@@ -12,7 +12,7 @@ $ apt remove docker docker.io containerd runc
 
 $ sudo apt update && sudo apt install curl git unzip tree -y
 
-<br>### Docker
+### Docker
 
 $ curl -fsSL https://get.docker.com -o get-docker.sh
 
