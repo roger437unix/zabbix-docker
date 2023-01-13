@@ -95,7 +95,14 @@ A frase encontrada deverá ser cofigurada na interface Zabbix web.
 Após alguns segundos, o valor da coluna "Last seen (age)" deverá mudar para um número entre 0 ... 6
 
 
+### As senhas estão em **zbx/env_vars/** nos arquivos:
+
+  - .MYSQL_PASSWORD
+  - .MYSQL_ROOT_PASSWORD
+  - .MYSQL_ROOT_USER
+  - .MYSQL_USER
 
 
 ![image](https://user-images.githubusercontent.com/33252885/212394257-6db7c575-308f-4294-996a-6d27809da7f9.png)
+<br><br>
 
