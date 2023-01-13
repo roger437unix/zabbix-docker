@@ -18,22 +18,22 @@ $ curl -fsSL https://get.docker.com -o get-docker.sh
 
 $ DRY_RUN=1 sudo sh ./get-docker.sh
 
-<br>### Docker-compose
+<br>
+### Docker-compose
 
 $ sudo curl -L "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
 $ sudo chmod +x /usr/local/bin/docker-compose
 
-
-<br>### Adicionar usuário atual ao grupo Docker
+<br>
+### Adicionar usuário atual ao grupo Docker
 
 $ sudo gpasswd -a $USER docker
 
 $ sudo reboot
 
-
-<br>### Verificar as instalacões
+<br>
+### Verificar as instalacões
 
 $ docker --version  && docker-compose --version
-
 
