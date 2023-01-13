@@ -1,0 +1,186 @@
+version: '3.7'
+
+networks:
+  zbx-net:
+    driver: bridge
+
+volumes:
+  snmptraps:
+  grafana:
+
+secrets:
+  MYSQL_USER:
+    file: ./zbx/env_vars/.MYSQL_USER
+  MYSQL_PASSWORD:
+    file: ./zbx/env_vars/.MYSQL_PASSWORD
+  MYSQL_ROOT_USER:
+    file: ./zbx/env_vars/.MYSQL_ROOT_USER
+  MYSQL_ROOT_PASSWORD:
+    file: ./zbx/env_vars/.MYSQL_ROOT_PASSWORD
+
+services:
+
+  # Servidor Zabbix
+  zabbix-server:
+    container_name: zabbix-server
+    image: zabbix/zabbix-server-mysql:alpine-6.2-latest
+    ports:
+      - "10051:10051"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro 
+      - ./zbx/zbx_env/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
+      - ./zbx/zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
+      - ./zbx/zbx_env/var/lib/zabbix/dbscripts:/var/lib/zabbix/dbscripts:ro
+      - ./zbx/zbx_env/var/lib/zabbix/export:/var/lib/zabbix/export:rw
+      - ./zbx/zbx_env/var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
+      - ./zbx/zbx_env/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
+      - ./zbx/zbx_env/var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+      - ./zbx/zbx_env/var/lib/zabbix/mibs:/var/lib/zabbix/mibs:ro
+      - snmptraps:/var/lib/zabbix/snmptraps:rw
+    env_file:
+    - ./zbx/env_vars/.env_db_mysql
+    - ./zbx/env_vars/.env_srv
+    secrets:
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_USER
+      - MYSQL_ROOT_PASSWORD
+    depends_on:
+      - mysql-server
+    networks:
+      - zbx-net
+
+  # Servidor de banco de dados MySQL
+  mysql-server:
+    container_name: mysql
+    image: mysql:8.0-oracle
+    command:
+    - mysqld
+    - --character-set-server=utf8mb4
+    - --collation-server=utf8mb4_bin
+    - --skip-character-set-client-handshake
+    - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./zbx/zbx_env/var/lib/mysql:/var/lib/mysql:rw
+    env_file:
+      - ./zbx/env_vars/.env_db_mysql
+    secrets:
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_PASSWORD  
+    networks:
+      - zbx-net
+
+  # Servidor web com nginx
+  zabbix-web-nginx-mysql:
+    container_name: nginx
+    image: zabbix/zabbix-web-nginx-mysql:alpine-6.2-latest
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./zbx/zbx_env/etc/ssl/nginx:/etc/ssl/nginx:ro
+      - ./zbx/zbx_env/usr/share/zabbix/modules/:/usr/share/zabbix/modules/:ro
+    env_file:
+      - ./zbx/env_vars/.env_db_mysql
+      - ./zbx/env_vars/.env_web
+    secrets:      
+      - MYSQL_USER
+      - MYSQL_PASSWORD  
+    depends_on:
+      - mysql-server
+      - zabbix-server
+    networks:
+      - zbx-net  
+
+  # Agente Zabbix
+  zabbix-agent:
+    container_name: zabbix-agent
+    image: zabbix/zabbix-agent:alpine-6.2-latest
+    ports:
+      - "10050:10050"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./zbx/zbx_env/etc/zabbix/zabbix_agentd.d:/etc/zabbix/zabbix_agentd.d:ro
+      - ./zbx/zbx_env/var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
+      - ./zbx/zbx_env/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
+      - ./zbx/zbx_env/var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+    env_file:
+      - ./zbx/env_vars/.env_agent
+    privileged: true
+    pid: "host"
+    networks:
+      - zbx-net
+
+  # Zabbix proxy  ==>  para ser provisionado deve-se incluir a flag "--profile zabbix-proxy" no comando "docker-compose"
+  zabbix-proxy-mysql:
+    container_name: zabbix-proxy
+    profiles: ["zabbix-proxy"]
+    image: zabbix/zabbix-proxy-mysql:alpine-6.2-latest
+    ports:
+    - "10071:10051"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - ./zbx/zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
+      - ./zbx/zbx_env/var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
+      - ./zbx/zbx_env/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
+      - ./zbx/zbx_env/var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+      - ./zbx/zbx_env/var/lib/zabbix/mibs:/var/lib/zabbix/mibs:ro
+      - snmptraps:/var/lib/zabbix/snmptraps:rw
+    env_file:
+      - ./zbx/env_vars/.env_db_mysql_proxy
+      - ./zbx/env_vars/.env_prx
+      - ./zbx/env_vars/.env_prx_mysql
+    depends_on:
+      - mysql-server
+      - zabbix-java-gateway
+      - zabbix-snmptraps
+    secrets:
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_ROOT_USER
+      - MYSQL_ROOT_PASSWORD  
+    networks:
+      - zbx-net  
+
+  # Java Gateway  ==>  para ser provisionado deve-se incluir a flag "--profile java-gateway" no comando "docker-compose"
+  zabbix-java-gateway:
+    container_name: java-gateway
+    profiles: ["java-gateway"]
+    image: zabbix/zabbix-java-gateway:alpine-6.2-latest
+    ports:
+    - "10052:10052"
+    env_file:
+    - ./zbx/env_vars/.env_java
+    networks:
+      - zbx-net
+
+  # Zabbix snpmtraps  ==>  para ser provisionado deve-se incluir a flag "--profile snmptraps" no comando "docker-compose"
+  zabbix-snmptraps:
+    container_name: snmptraps
+    profiles: ["snmptraps"]
+    image: zabbix/zabbix-snmptraps:alpine-6.2-latest
+    ports:
+      - "162:1162/udp"
+    volumes:
+      - snmptraps:/var/lib/zabbix/snmptraps:rw
+    networks:
+      - zbx-net
+
+  # Grafana  ==>  para ser provisionado deve-se incluir a flag "--profile grafana" no comando "docker-compose"
+  grafana:
+    container_name: grafana
+    profiles: ["grafana"]
+    image: grafana/grafana-enterprise:latest
+    restart: unless-stopped
+    volumes:
+      - grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+    networks:
+      - zbx-net
